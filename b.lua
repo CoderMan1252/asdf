@@ -138,7 +138,7 @@ a = function(name,maxsize)
 		return true
 	end
 	Handle.Touched:Connect(function(part)
-		if part:FindFirstChildOfClass("Model") == Tool.Parent then return end
+		if part:FindFirstChildOfClass("Model"):FindFirstChildWhichIsA("Tool") == Tool then return end
 		if part.Name=="BasePart" and part:IsA("BasePart") and part.Anchored == true and part.Size.Magnitude > maxsize then return end
 		
 		local parent
