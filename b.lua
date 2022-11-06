@@ -67,7 +67,7 @@ a = function(name,maxsize)
 	Handle.Touched:Connect(function(part)
 		if part.Name=="BasePart" and part:IsA("BasePart") and part.Anchored == true and part.Size.Magnitude > maxsize then return end
 		if part.Size.X>maxsize*2 or part.Size.Y>maxsize*2 or part.Size.Z>maxsize*2 then return end
-		
+
 		part:Destroy()
 	end)
 	local Tool=Instance.new("Tool",targetplr.Backpack)
@@ -122,55 +122,33 @@ a = function(name,maxsize)
 	local Tool=Instance.new("Tool",targetplr.Backpack)
 	Tool.Name="ScriptBreaker"
 	Tool.ToolTip="Breaks the scripts of parts it touches."
+
 	local Handle=Instance.new("Part")
 	Handle.Massless=true
 	Handle.Name="Handle"
 	Handle.Size=Vector3.new(1,5,25)
-	Handle.Parent=Tool
 	Handle.Locked=false
 	Handle.CanTouch=true
+	Handle.Parent=Tool
+
 	Tool.GripPos=Vector3.new(0,0,Handle.Size.Z/2)
+
 	local function checkifgameorws(inst)
-		local data = {pcall(function()return game:GetService(inst)end)}
-		if inst==game or data[1] then
+		local data = pcall(function()return game:GetService(inst)end)
+		if inst==game or data then
 			return false
 		end
 		return true
 	end
+	local p = print
 	Handle.Touched:Connect(function(part)
-		if part:FindFirstChildOfClass("Model"):FindFirstChildWhichIsA("Tool") == Tool then return end
-		if part.Name=="BasePart" and part:IsA("BasePart") and part.Anchored == true and part.Size.Magnitude > maxsize then return end
-		
-		local parent
-		
-		pcall(function()
-			if part.Parent.Parent.Parent.Parent and checkifgameorws(part.Parent.Parent.Parent.Parent) then
-				parent = part.Parent.Parent.Parent.Parent
-			end
-		end)
-		
-		pcall(function()
-			if not parent and part.Parent.Parent.Parent and checkifgameorws(part.Parent.Parent.Parent) then
-				parent = part.Parent.Parent.Parent
-			end
-		end)
-		
-		pcall(function()
-			if not parent and part.Parent.Parent and checkifgameorws(part.Parent.Parent) then
-				parent = part.Parent.Parent
-			end
-		end)
-		
-		pcall(function()
-			if not parent and part.Parent and checkifgameorws(part.Parent) then
-				parent = part.Parent
-			elseif not parent then
-				parent = part
-			end
-		end)
-		
-		parent = parent or part
-		
+		if part:FindFirstChildOfClass("Model") == targetplr then print("char oops") return end
+		if part.Name=="BasePart" and part:IsA("BasePart") and part.Anchored == true and part.Size.Magnitude > maxsize then print("baseplate oops") return end
+
+		local parent = part
+
+		for i=2,#part:GetFullName():split(".") - 1 do parent = parent.Parent end
+
 		local hardbreak = true
 		local getPlrFromChar = function(a)return game:GetService("Players"):GetPlayerFromCharacter(a)end
 		local allbroken
@@ -186,38 +164,40 @@ a = function(name,maxsize)
 			"Humanoid",
 			"Torso"
 		}
-		
+
 		for i,v in next,parent:GetDescendants()do
-			if v:IsA("Script") then v.Disabled = true end
-			
+			if v:IsA("Script") then
+				v.Disabled = true
+			end
+
 			if table.find(classestobreak,v.ClassName) or v.ClassName:match("Value") or v.ClassName:match("Body") then
 				if v.Name~="Animate" and v.ClassName~="LocalScript" then
 					v:Destroy()
 				end
 			elseif hardbreak and not allbroken then
 				local HasSpeaker = not pcall(function()return(v:WaitForChild("Speaker",1e-3)or{Name=""}).Name end)
-				
+
 				if not HasSpeaker then
 					Instance.new("Speaker",v)
 				else
 					allbroken = true
 				end
 			end
-			
+
 			if not isplr and hardbreak and not table.find(skip_Names,v.Name) then
 				v.Name = tostring({}):sub(10,24)
 			end
 		end
-		
+
 		if hardbreak then 
 			if pcall(function()return(parent:WaitForChild("Speaker",1e-3)or{Name=""}).Name end) then
 				Instance.new("Speaker",parent)
 			end
-			
+
 			parent.DescendantAdded:Connect(function(desc)
 				if table.find(classestobreak,desc.ClassName) then
 					task.defer(desc.Destroy,desc)
-					
+
 					if desc:IsA("Script") then
 						desc.Disabled = true
 						desc:ClearAllChildren()
@@ -226,7 +206,7 @@ a = function(name,maxsize)
 			end)
 		end
 	end)
-	
+
 	local function vmin(vector_1,vector_2,max)
 		local function min(startval,limitval,max)
 			if startval<limitval then
@@ -520,9 +500,12 @@ a = function(name,maxsize)
 	Tool.Activated:Connect(function()
 		workspace.Terrain:Clear()
 	end)
-	for i,v in next,workspace:GetDescendants()do
-		if v:IsA("BasePart") then
-			v.CanTouch=true
+	
+	while wait(.2) do
+		for i,v in next, workspace:GetDescendants() do
+			if v:IsA("BasePart") and v.CanTouch == false then
+				v.CanTouch = true
+			end
 		end
 	end
 end
