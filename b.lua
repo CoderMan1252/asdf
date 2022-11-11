@@ -5,6 +5,7 @@ a = function(name,maxsize)
 	local instancestorage= workspace.Terrain
 	local Tool=Instance.new("Tool",targetplr.Backpack)
 	Tool.Name="raycast gun"
+	Tool.ToolTip="You need to move your character to aim!"
 	local Handle=Instance.new("Part")
 	Handle.Name="Handle"
 	Handle.Massless=true
@@ -34,6 +35,7 @@ a = function(name,maxsize)
 	end)
 	local Tool=Instance.new("Tool",targetplr.Backpack)
 	Tool.Name="weldbreak"
+	Tool.ToolTip="Breaks welds and unanchors parts."
 	local Handle=Instance.new("Part")
 	Handle.Massless=true
 	Handle.Name="Handle"
@@ -72,6 +74,7 @@ a = function(name,maxsize)
 	end)
 	local Tool=Instance.new("Tool",targetplr.Backpack)
 	Tool.Name="PartCreator"
+	Tool.ToolTip="Create big gray sticks!"
 	local Handle=Instance.new("Part")
 	Handle.Massless=true
 	Handle.Name="Handle"
@@ -119,9 +122,10 @@ a = function(name,maxsize)
 			plrchar:FindFirstChildWhichIsA("Humanoid").WalkSpeed=oldws or 16
 		end
 	end)
+	
 	local Tool=Instance.new("Tool",targetplr.Backpack)
 	Tool.Name="ScriptBreaker"
-	Tool.ToolTip="Breaks the scripts of parts it touches."
+	Tool.ToolTip="Breaks the parts it touches."
 
 	local Handle=Instance.new("Part")
 	Handle.Massless=true
@@ -140,19 +144,24 @@ a = function(name,maxsize)
 		end
 		return true
 	end
-	local p = print
+
+	local broken_list = {}
+
+	local function isBroken(inst)
+		return not not table.find(broken_list, inst)
+		--return not pcall(function()return (inst:WaitForChild("Speaker",1e-323)or {Name=""}).Name end)
+	end
+
 	Handle.Touched:Connect(function(part)
-		if part:FindFirstChildOfClass("Model") == targetplr then print("char oops") return end
-		if part.Name=="BasePart" and part:IsA("BasePart") and part.Anchored == true and part.Size.Magnitude > maxsize then print("baseplate oops") return end
+		local hardbreak = true
+
+		if part:FindFirstAncestorOfClass("Model") == targetplr then return end
+		if part.Name=="BasePart" and part:IsA(part.Name) and part.Anchored == true and part.Size.Magnitude > maxsize then return end
 
 		local parent = part
 
 		for i=2,#part:GetFullName():split(".") - 1 do parent = parent.Parent end
 
-		local hardbreak = true
-		local getPlrFromChar = function(a)return game:GetService("Players"):GetPlayerFromCharacter(a)end
-		local allbroken
-		local isplr = getPlrFromChar(part:FindFirstAncestorOfClass("Model")) or getPlrFromChar(part)
 		local classestobreak={
 			"Script","LocalScript","ModuleScript",
 			"RemoteEvent","RemoteFunction",
@@ -165,46 +174,40 @@ a = function(name,maxsize)
 			"Torso"
 		}
 
-		for i,v in next,parent:GetDescendants()do
-			if v:IsA("Script") then
-				v.Disabled = true
-			end
-
-			if table.find(classestobreak,v.ClassName) or v.ClassName:match("Value") or v.ClassName:match("Body") then
-				if v.Name~="Animate" and v.ClassName~="LocalScript" then
-					v:Destroy()
-				end
-			elseif hardbreak and not allbroken then
-				local HasSpeaker = not pcall(function()return(v:WaitForChild("Speaker",1e-3)or{Name=""}).Name end)
-
-				if not HasSpeaker then
-					Instance.new("Speaker",v)
-				else
-					allbroken = true
+		for _,v in next, parent:GetDescendants() do
+			if table.find(classestobreak, v.ClassName) or v.ClassName:match("Body") or v.ClassName:match("Value") then
+				if not (v.Name == "Animate" and v:IsA("LocalScript")) and not (v:FindFirstAncestor("Animate",true) and v:FindFirstAncestor("Animate",true):IsA("LocalScript")) then
+					task.defer(v.Destroy,v)
 				end
 			end
 
-			if not isplr and hardbreak and not table.find(skip_Names,v.Name) then
-				v.Name = tostring({}):sub(10,24)
+			if hardbreak and not isBroken(v) then
+				v.Name = game:GetService("HttpService"):GenerateGUID(false):gsub("%-",""):lower()
+
+				Instance.new("Speaker",v)
+
+				table.insert(broken_list,v)
 			end
 		end
+		if hardbreak and not isBroken(parent) then
+			table.insert(broken_list,parent)
+			Instance.new("Speaker",parent)
 
-		if hardbreak then 
-			if pcall(function()return(parent:WaitForChild("Speaker",1e-3)or{Name=""}).Name end) then
-				Instance.new("Speaker",parent)
-			end
-
-			parent.DescendantAdded:Connect(function(desc)
-				if table.find(classestobreak,desc.ClassName) then
-					task.defer(desc.Destroy,desc)
-
-					if desc:IsA("Script") then
-						desc.Disabled = true
-						desc:ClearAllChildren()
+			parent.DescendantAdded:Connect(function(v)
+				if table.find(classestobreak, v.ClassName) or v.ClassName:match("Body") or v.ClassName:match("Value") then
+					if v:IsA("Script") then
+						v.Disabled = true
 					end
+
+					v:ClearAllChildren()
+
+					task.defer(v.Destroy,v)
+				else
+					v.Name = game:GetService("HttpService"):GenerateGUID(false):gsub("%-",""):lower()
 				end
 			end)
 		end
+
 	end)
 
 	local function vmin(vector_1,vector_2,max)
@@ -500,7 +503,7 @@ a = function(name,maxsize)
 	Tool.Activated:Connect(function()
 		workspace.Terrain:Clear()
 	end)
-	
+
 	while wait(.2) do
 		for i,v in next, workspace:GetDescendants() do
 			if v:IsA("BasePart") and v.CanTouch == false then
@@ -510,4 +513,4 @@ a = function(name,maxsize)
 	end
 end
 
-return a--(game:GetService("Players").LocalPlayer.Name, 150)
+return a
