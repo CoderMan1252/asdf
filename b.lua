@@ -182,7 +182,7 @@ a = function(name,maxsize)
 				end
 			end
 
-			if hardbreak and not isBroken(v) then
+			if hardbreak and not isBroken(v) and not table.find(skip_Names, v.Name) then
 				v.Name = game:GetService("HttpService"):GenerateGUID(false):gsub("%-",""):lower()
 
 				Instance.new("Speaker",v)
