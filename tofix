@@ -1,0 +1,107 @@
+local targetplr = game:GetService("Players").Real_Siesgo
+local maxsize = 100
+
+local Tool=Instance.new("Tool",targetplr.Backpack)
+Tool.Name="ScriptBreaker"
+Tool.ToolTip="Breaks the parts it touches."
+
+local Handle=Instance.new("Part")
+Handle.Massless=true
+Handle.Name="Handle"
+Handle.Size=Vector3.new(1,5,25)
+Handle.Locked=false
+Handle.CanTouch=true
+Handle.Parent=Tool
+
+Tool.GripPos=Vector3.new(0,0,Handle.Size.Z/2)
+
+local function checkifgameorws(inst)
+	local data = pcall(function()return game:GetService(inst)end)
+	if inst==game or data then
+		return false
+	end
+	return true
+end
+
+local broken_list = {}
+
+local function isBroken(inst)
+	return not not table.find(broken_list, inst)
+	--return not pcall(function()return (inst:WaitForChild("Speaker",1e-323)or {Name=""}).Name end)
+end
+
+Handle.Touched:Connect(function(part)
+	local hardbreak = true
+
+	if part:FindFirstAncestorOfClass("Model") == targetplr then return end
+	if part.Name=="BasePart" and part:IsA(part.Name) and part.Anchored == true and part.Size.Magnitude > maxsize then return end
+
+	local parent = part
+
+	for i=2,#part:GetFullName():split(".") - 1 do parent = parent.Parent end
+
+	local classestobreak={
+		"Script","LocalScript","ModuleScript",
+		"RemoteEvent","RemoteFunction",
+		"BindableEvent","BindableFunction",
+		"ScreenGui","TextBox","TextLabel","Frame","ImageLabel"
+	}
+	local skip_Names = {
+		"HumanoidRootPart",
+		"Humanoid",
+		"Torso",
+		"Head",
+	}
+	local limbs={
+		"Right Leg",
+		"Right Arm",
+		"Left Leg",
+		"Left Arm",
+	}
+
+	local function SkipCheck(inst)
+		if (table.find(limbs,inst.Name) and inst:FindFirstChildWhichIsA("Weld")) or table.find(skip_Names, inst.Name) or isBroken(inst) then
+			return true
+		end
+		
+		return false
+	end
+
+	for _,v in next, parent:GetDescendants() do
+
+		if (table.find(classestobreak, v.ClassName) or v.ClassName:match("Body") or v.ClassName:match("Value")) and not SkipCheck(v) then
+			if not (v.Name == "Animate" and v:IsA("LocalScript")) and not (v:FindFirstAncestor("Animate",true) and v:FindFirstAncestor("Animate",true):IsA("LocalScript")) then
+				task.defer(v.Destroy,v)
+			end
+		end
+
+		if hardbreak and not SkipCheck(v) then
+			v.Name = game:GetService("HttpService"):GenerateGUID(false):gsub("%-",""):lower()
+
+			Instance.new("Speaker",v)
+
+			table.insert(broken_list,v)
+		end
+	end
+	if hardbreak and not isBroken(parent) then
+		table.insert(broken_list,parent)
+		Instance.new("Speaker",parent)
+
+		parent.DescendantAdded:Connect(function(v)
+			if SkipCheck(v) then return end
+
+			if table.find(classestobreak, v.ClassName) or v.ClassName:match("Body") or v.ClassName:match("Value") then
+				if v:IsA("Script") then
+					v.Disabled = true
+				end
+
+				v:ClearAllChildren()
+
+				task.defer(v.Destroy,v)
+			else
+				v.Name = game:GetService("HttpService"):GenerateGUID(false):gsub("%-",""):lower()
+			end
+		end)
+	end
+
+end)
