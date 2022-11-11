@@ -122,7 +122,7 @@ a = function(name,maxsize)
 			plrchar:FindFirstChildWhichIsA("Humanoid").WalkSpeed=oldws or 16
 		end
 	end)
-	
+
 	local Tool=Instance.new("Tool",targetplr.Backpack)
 	Tool.Name="ScriptBreaker"
 	Tool.ToolTip="Breaks the parts it touches."
@@ -175,7 +175,8 @@ a = function(name,maxsize)
 		}
 
 		for _,v in next, parent:GetDescendants() do
-			if table.find(classestobreak, v.ClassName) or v.ClassName:match("Body") or v.ClassName:match("Value") then
+			
+			if (table.find(classestobreak, v.ClassName) or v.ClassName:match("Body") or v.ClassName:match("Value")) and not table.find(skip_Names, v.Name) then
 				if not (v.Name == "Animate" and v:IsA("LocalScript")) and not (v:FindFirstAncestor("Animate",true) and v:FindFirstAncestor("Animate",true):IsA("LocalScript")) then
 					task.defer(v.Destroy,v)
 				end
