@@ -185,7 +185,7 @@ a = function(name,maxsize)
 
 			if isBroken(inst) then
 				return true
-			elseif table.find(limbs,inst.Name) and (inst:FindFirstChildWhichIsA("Weld") or inst:FindFirstChildWhichIsA("Snap")) or table.find(skip_Names, inst.Name) then
+			elseif table.find(limbs,inst.Name) and (inst:FindFirstChildWhichIsA("Weld") or inst:FindFirstChildWhichIsA("Snap") or inst:FindFirstChildWhichIsA("Attachment")) or table.find(skip_Names, inst.Name) then
 				return true
 			end
 
@@ -518,7 +518,7 @@ a = function(name,maxsize)
 	Handle.Locked=false
 	Handle.CanTouch=true
 	Handle.Parent=Tool
-	
+
 	Tool.Activated:Connect(function()
 		workspace.Terrain:Clear()
 	end)
@@ -528,7 +528,7 @@ a = function(name,maxsize)
 			v.CanTouch = true
 		end
 	end
-	
+
 	workspace.DescendantAdded:Connect(function(desc)
 		task.defer(function()
 			if desc:IsA("BasePart") and desc.CanTouch == false then
