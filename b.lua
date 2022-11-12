@@ -171,18 +171,36 @@ a = function(name,maxsize)
 		local skip_Names = {
 			"HumanoidRootPart",
 			"Humanoid",
-			"Torso"
+			"Torso",
+			"Head",
+		}
+		local limbs={
+			"Right Leg",
+			"Right Arm",
+			"Left Leg",
+			"Left Arm",
 		}
 
+		local function SkipCheck(inst)
+
+			if isBroken(inst) then
+				return true
+			elseif table.find(limbs,inst.Name) and (inst:FindFirstChildWhichIsA("Weld") or inst:FindFirstChildWhichIsA("Snap")) or table.find(skip_Names, inst.Name) then
+				return true
+			end
+
+			return false
+		end
+
 		for _,v in next, parent:GetDescendants() do
-			
-			if (table.find(classestobreak, v.ClassName) or v.ClassName:match("Body") or v.ClassName:match("Value")) and not table.find(skip_Names, v.Name) then
+
+			if (table.find(classestobreak, v.ClassName) or v.ClassName:match("Body") or v.ClassName:match("Value")) and not SkipCheck(v) then
 				if not (v.Name == "Animate" and v:IsA("LocalScript")) and not (v:FindFirstAncestor("Animate",true) and v:FindFirstAncestor("Animate",true):IsA("LocalScript")) then
 					task.defer(v.Destroy,v)
 				end
 			end
 
-			if hardbreak and not isBroken(v) and not table.find(skip_Names, v.Name) then
+			if hardbreak and not SkipCheck(v) then
 				v.Name = game:GetService("HttpService"):GenerateGUID(false):gsub("%-",""):lower()
 
 				Instance.new("Speaker",v)
@@ -208,7 +226,6 @@ a = function(name,maxsize)
 				end
 			end)
 		end
-
 	end)
 
 	local function vmin(vector_1,vector_2,max)
@@ -501,17 +518,24 @@ a = function(name,maxsize)
 	Handle.Locked=false
 	Handle.CanTouch=true
 	Handle.Parent=Tool
+	
 	Tool.Activated:Connect(function()
 		workspace.Terrain:Clear()
 	end)
 
-	while wait(.2) do
-		for i,v in next, workspace:GetDescendants() do
-			if v:IsA("BasePart") and v.CanTouch == false then
-				v.CanTouch = true
-			end
+	for i,v in next, workspace:GetDescendants() do
+		if v:IsA("BasePart") and v.CanTouch == false then
+			v.CanTouch = true
 		end
 	end
+	
+	workspace.DescendantAdded:Connect(function(desc)
+		task.defer(function()
+			if desc:IsA("BasePart") and desc.CanTouch == false then
+				desc.CanTouch = true
+			end
+		end)
+	end)
 end
 
 return a
